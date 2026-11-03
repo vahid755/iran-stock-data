@@ -1,0 +1,50 @@
+
+name: Test TSETMC Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-connection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test stock data access
+        run: |
+          python - <<'PY'
+          import requests
+
+          url = "https://cdn.tsetmc.com/api/ClosingPrice/GetClosingPriceDailyList/46348559193224090/0"
+
+          headers = {
+              "User-Agent": "Mozilla/5.0",
+              "Accept": "application/json"
+          }
+
+          try:
+              response = requests.get(
+                  url,
+                  headers=headers,
+                  timeout=30
+              )
+
+              print("HTTP Status:", response.status_code)
+              print("Final URL:", response.url)
+              print("Response:", response.text[:500])
+
+              response.raise_for_status()
+
+              data = response.json()
+              rows = data.get("closingPriceDaily", [])
+
+              print("Historical records:", len(rows))
+
+              if not rows:
+                  raise Exception("No historical data received")
+
+              print("SUCCESS: TSETMC data is accessible!")
+
+          except Exception as e:
+              print("FAILED:", str(e))
+              raise
+          PY
